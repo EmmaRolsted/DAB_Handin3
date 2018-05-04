@@ -12,7 +12,8 @@ namespace F18DABH3Gr27.Controllers
     {
         public ActionResult Index()
         {
-            ViewBag.Title = "Home Page";
+            //Name of browsertab
+            ViewBag.Title = "PersonKartotek";
             //var uow = new UnitOfWork<Person>().InitializeDataBase();
             return View();
         }
