@@ -1,54 +1,178 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
-using System.Web;
 using System.Web.Http;
+using System.Web.Http.Description;
+using System.Web.Http.Results;
 using F18DABH3Gr27.Models;
-using F18DABH3Gr27.Repository;
+using Microsoft.Azure.Documents;
+
+//// Followed tutorial to create Repository:  https://docs.microsoft.com/en-us/azure/cosmos-db/sql-api-dotnet-application
 
 namespace F18DABH3Gr27.Controllers
 {
     public class PeopleController : ApiController
     {
-        //GET: api/people
+        //private F18DABH3Gr27Context db = new F18DABH3Gr27Context();
+
+        //GET: all people from database
         public async Task<IEnumerable<Person>> GetPeople()
         {
-            var unitOfWork = new UnitOfWork<Person>();
-            return await unitOfWork.GetAllPeople();
-        }
-        
-        //GET: api/People/5
-        public async Task<Person> GetPerson(int id)
-        {
-            var unitOfwork = new UnitOfWork<Person>();
-            return await unitOfwork.FindPersonFromId(id.ToString());
+            var person = await Repository.Repository<Person>.GetPersonsAsync(d => true);
+            return person;
         }
 
-        //POST: api/people
-        public async Task PostPerson([FromBody] Person person)
+        //GET: one person from datafrom using the person.Id
+        [ResponseType(typeof(Person))]
+        public async Task<Person> GetPerson(string id)
         {
-            var unitOfwork = new UnitOfWork<Person>();
-            unitOfwork.Add(person);
-            await unitOfwork.CommitUpdate();
-        }
-        
-        //PUT: api/people/5
-        public async Task PutPerson(int id, [FromBody] Person person)
-        {
-            var unitOfwork = new UnitOfWork<Person>();
-            unitOfwork.Update(person);
-            await unitOfwork.CommitUpdate();
+            return await Repository.Repository<Person>.GetPersonAsync(id);
+      
         }
 
-        //DELETE: api/people/5
+        // PUT: api/People/5 UPDATE
+        [ResponseType(typeof(void))]
+        public async Task<Document> PutPerson(string id, Person person)
+        {
+            return await Repository.Repository<Person>.UpdatePersonAsync(id, person);
+        }
+
+        //POST
+        [ResponseType(typeof(Person))]
+        public async Task<Document> PostPerson(Person person)
+        {
+            return await Repository.Repository<Person>.CreatePersonAsync(person);
+        }
+
+        //DELETE
+        [ResponseType(typeof(Person))]
         public async Task DeletePerson(string id)
         {
-            var unitOfwork = new UnitOfWork<Person>();
-            unitOfwork.delete(id);
-            await unitOfwork.CommitUpdate();
+            await Repository.Repository<Person>.DeletePersonAsync(id);
         }
     }
 }
 
+//POST
+
+        //DELETE
+
+        //// GET: api/People
+        ////public IQueryable<Person> GetPeople()
+        ////{
+        ////    return db.People;
+        ////}
+
+        //// GET: api/People/5
+        //[ResponseType(typeof(Person))]
+        //public async Task<IHttpActionResult> GetPerson(string id)
+        //{
+        //    Person person = await db.People.FindAsync(id);
+        //    if (person == null)
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    return Ok(person);
+        //}
+
+        //// PUT: api/People/5
+        //[ResponseType(typeof(void))]
+        //public async Task<IHttpActionResult> PutPerson(string id, Person person)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        return BadRequest(ModelState);
+        //    }
+
+        //    if (id != person.Id)
+        //    {
+        //        return BadRequest();
+        //    }
+
+        //    db.Entry(person).State = EntityState.Modified;
+
+        //    try
+        //    {
+        //        await db.SaveChangesAsync();
+        //    }
+        //    catch (DbUpdateConcurrencyException)
+        //    {
+        //        if (!PersonExists(id))
+        //        {
+        //            return NotFound();
+        //        }
+        //        else
+        //        {
+        //            throw;
+        //        }
+        //    }
+
+        //    return StatusCode(HttpStatusCode.NoContent);
+        //}
+
+        //// POST: api/People
+        //[ResponseType(typeof(Person))]
+        //public async Task<IHttpActionResult> PostPerson(Person person)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        return BadRequest(ModelState);
+        //    }
+
+        //    db.People.Add(person);
+
+        //    try
+        //    {
+        //        await db.SaveChangesAsync();
+        //    }
+        //    catch (DbUpdateException)
+        //    {
+        //        if (PersonExists(person.Id))
+        //        {
+        //            return Conflict();
+        //        }
+        //        else
+        //        {
+        //            throw;
+        //        }
+        //    }
+
+        //    return CreatedAtRoute("DefaultApi", new { id = person.Id }, person);
+        //}
+
+        //// DELETE: api/People/5
+        //[ResponseType(typeof(Person))]
+        //public async Task<IHttpActionResult> DeletePerson(string id)
+        //{
+        //    Person person = await db.People.FindAsync(id);
+        //    if (person == null)
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    db.People.Remove(person);
+        //    await db.SaveChangesAsync();
+
+        //    return Ok(person);
+        //}
+
+        //protected override void Dispose(bool disposing)
+        //{
+        //    if (disposing)
+        //    {
+        //        db.Dispose();
+        //    }
+        //    base.Dispose(disposing);
+        //}
+
+        //private bool PersonExists(string id)
+        //{
+        //    return db.People.Count(e => e.Id == id) > 0;
+        //}

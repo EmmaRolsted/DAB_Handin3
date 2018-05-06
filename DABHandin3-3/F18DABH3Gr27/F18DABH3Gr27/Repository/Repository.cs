@@ -1,214 +1,163 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
-//using System.Data.Entity;
-using System.Diagnostics;
 using System.Linq;
-using F18DABH3Gr27.Models;
-using Microsoft.Azure.Documents.Client;
+using System.Web;
 using Microsoft.Azure.Documents;
+using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents.Linq;
+using System.Configuration;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using System.Net;
-using System.Net.Http;
-using System.Web.Http;
-using System.Web.Http.Results;
+
+
+// Followed tutorial to create Repository:  https://docs.microsoft.com/en-us/azure/cosmos-db/sql-api-dotnet-application
 
 namespace F18DABH3Gr27.Repository
 {
     public static class Repository<T> where T : class
     {
-        //private static DocumentClient _client;
-
-        //private const string EndpointUrl = "https://localhost:8081";
-
-        //private const string PrimaryKey =
-        //    "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="; //Key for local DB emulator
+        private static readonly string DatabaseId = ConfigurationManager.AppSettings["database"];
+        private static readonly string CollectionId = ConfigurationManager.AppSettings["collection"];
+        private static DocumentClient client;
 
 
-        //private static string DatabaseId = "PersonKartotekDB"; //Name of database and collection
-        private static string CollectionId = "PersonKartotek";
-
-
-        private const string EndpointUrl = "https://localhost:8081";
-
-        private const string PrimaryKey = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";   //Key for local DB emulator
-
-        public static string DatabaseId = "PersonKartotek";    //Name of database and collection
-
-        //public static readonly string DatabaseId = ConfigurationManager.AppSettings["databaseName"]; //See web.config file for info
-        //public static readonly string CollectionId = ConfigurationManager.AppSettings["collectionName"]; //See web.config file for info
-        //public string CollectionName = "PersonCollection3";
-
-        private static DocumentClient _client = new DocumentClient(new Uri(EndpointUrl), PrimaryKey);
-
-        public static async Task CreateDB()
+        public static void Initialize()
         {
-            await _client.CreateDatabaseIfNotExistsAsync(new Database {Id = DatabaseId}); //Create new database
-            DocumentCollection collection = new DocumentCollection();
-            //collection.Id = CollectionId;
-            collection.PartitionKey.Paths.Add("/id");
-
-            await _client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri(DatabaseId),
-                collection); //Create collection  
+            //See Web-config files for information...
+            client = new DocumentClient(new Uri(ConfigurationManager.AppSettings["endpoint"]), ConfigurationManager.AppSettings["authKey"]);
+            CreateDatabaseIfNotExistsAsync().Wait();
+            CreateCollectionIfNotExistsAsync().Wait();
         }
-
-        public static async Task<T> GetDocument(string id)
+        
+        // Creating DB if it does not already exist! /with name from web.config file
+        private static async Task CreateDatabaseIfNotExistsAsync()
         {
             try
             {
-                Document result =
-                    await _client.ReadDocumentAsync(UriFactory.CreateDocumentUri(DatabaseId, CollectionId, id));
-                return (T) (dynamic) result; //will be resolves at run-time
-
+                await client.ReadDatabaseAsync(UriFactory.CreateDatabaseUri(DatabaseId));
             }
             catch (DocumentClientException e)
             {
                 if (e.StatusCode == System.Net.HttpStatusCode.NotFound)
-                    return null;
-                else throw;
+                {
+                    await client.CreateDatabaseAsync(new Database { Id = DatabaseId });
+                }
+                else
+                {
+                    throw;
+                }
             }
         }
-
-        public static async Task<IEnumerable<T>> GetDocuments()
+        // Creating DB collection if it does not already exist! /with name from web.config file
+        private static async Task CreateCollectionIfNotExistsAsync()
         {
-            IDocumentQuery<T> queryable = _client
-                .CreateDocumentQuery<T>(UriFactory.CreateDocumentCollectionUri(DatabaseId, CollectionId),
-                    new FeedOptions {MaxItemCount = -1}).AsDocumentQuery();
-
-            List<T> resulstList = new List<T>();
-            while (queryable.HasMoreResults)
+            try
             {
-                resulstList.AddRange(await queryable.ExecuteNextAsync<T>());
+                await client.ReadDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(DatabaseId, CollectionId));
+            }
+            catch (DocumentClientException e)
+            {
+                if (e.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    await client.CreateDocumentCollectionAsync(
+                        UriFactory.CreateDatabaseUri(DatabaseId),
+                        new DocumentCollection { Id = CollectionId },
+                        new RequestOptions { OfferThroughput = 1000 });
+                }
+                else
+                {
+                    throw;
+                }
+            }
+        }
+        //GET: Get alle people from the database
+        public static async Task<IEnumerable<T>> GetPersonsAsync(Expression<Func<T, bool>> predicate)
+        {
+            IDocumentQuery<T> query = client.CreateDocumentQuery<T>(
+                    UriFactory.CreateDocumentCollectionUri(DatabaseId, CollectionId))
+                .Where(predicate)
+                .AsDocumentQuery();
+
+            List<T> results = new List<T>();
+            while (query.HasMoreResults)
+            {
+                results.AddRange(await query.ExecuteNextAsync<T>());
             }
 
-            return resulstList;
+            return results;
         }
 
-        public static async Task<Document> CreateDocument(T item)
+        //GET: Get specific person (id) from the database
+        public static async Task<T> GetPersonAsync(string id)
         {
-            return await _client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(DatabaseId, CollectionId),
-                item);
-
+            try
+            {
+                Document document = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(DatabaseId, CollectionId, id));
+                return (T)(dynamic)document;
+            }
+            catch (DocumentClientException e)
+            {
+                if (e.StatusCode == HttpStatusCode.NotFound)
+                {
+                    return null;
+                }
+                else
+                {
+                    throw;
+                }
+            }
         }
-
-        public static async Task<Document> UpdateDocument(string id, T item)
+        //POST: (Add person)
+        public static async Task<Document> CreatePersonAsync(T item)
         {
-            return await _client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(DatabaseId, CollectionId, id),
-                item);
-            //return await _client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(DatabaseId, CollectionId, id), item);
+            //try
+            //{
+            //    await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(DatabaseId, CollectionId), item);
+            //}
+            //catch (DocumentClientException e)
+            //{
+            //    if (e.StatusCode == HttpStatusCode.NotFound)
+            //    {
+            //        return null;
+            //    }
+            //    else
+            //    {
+            //        throw;
+            //    }
+            //}
+            return await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(DatabaseId, CollectionId), item);
         }
 
-        public static async Task DeleteDocument(string id)
+        //PUT: (Update an existing resource(Person))
+        public static async Task<Document> UpdatePersonAsync(string id, T item)
         {
-            await _client.DeleteDocumentAsync(UriFactory.CreateDocumentUri(DatabaseId, CollectionId, id));
+            //try
+            //{
+            //    await client.ReplaceDocumentAsync(UriFactory.CreateDocumentCollectionUri(DatabaseId, CollectionId, id), item);
+            //}
+            //catch (DocumentClientException e)
+            //{
+            //    if (e.StatusCode == HttpStatusCode.NotFound)
+            //    {
+            //        return null;
+            //    }
+            //    else
+            //    {
+            //        throw;
+            //    }
+            //}
+            return await client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(DatabaseId, CollectionId, id), item);
         }
 
-        //private static Person InitPerson()
-        //{
-        //    Person arminaPerson = new Person
-        //    {
-        //        Id = "Armina.8",
-        //        Firstname = "Armina",
-        //        MiddleName = "Isabella",
-        //        LastName = "Sanjari",
+        //DELETE: Delete a person from database
+        public static async Task DeletePersonAsync(string id)
+        {
+
+            await client.DeleteDocumentAsync(UriFactory.CreateDocumentUri(DatabaseId, CollectionId, id));
+        }
 
 
-        //        Email = new Email
-        //        {
-        //            EmailAddress = "armina1506@hotmail.com",
-        //            EmailType = "privat"
-
-        //        },
-        //        PhoneNR = new PhoneNR
-        //        {
-        //            PhoneNumber = "27289764",
-        //            PhoneType = "privat",
-        //            PhoneCompany = "nej"
-        //        },
-
-        //        PrimaryAddress = new PrimaryAddress
-        //        {
-        //            Type = "privat",
-        //            CityName = "Aarhus",
-        //            HouseNumber = "6",
-        //            StreetName = "Haslevej",
-        //            ZipCode = "8000"
-
-        //        },
-
-        //        AltAddress = new AltAddress
-        //        {
-        //            AltAddressType = "skole",
-        //            CityName = "katrinebjerg",
-        //            HouseNumber = "46",
-        //            StreetName = "finderupvej",
-        //            ZipCode = "8200"
-        //        },
-
-        //    };
-
-
-        //    return arminaPerson;
-
-        //}
+        
     }
 }
-
-//        public IEnumerable<Person> GetAll()
-//        {
-//            IQueryable<Person> query = _client
-//                .CreateDocumentQuery<Person>(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName));
-
-//            List<Person> results = new List<Person>();
-//            foreach (var person in query)
-//            {
-//                results.Add(person);
-//            }
-
-//            return results;
-//        }
-
-//        internal Person Get(string id)
-//        {
-//            IQueryable<Person> query = _client
-//                .CreateDocumentQuery<Person>(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName))
-//                .Where(p => p.Id == id);
-
-//            Person pe = new Person();
-//            foreach (var person in query)
-//            {
-//                pe = person;
-//            }
-//            return pe;
-//        }
-
-//        public async void Insert(Person person)
-//        {
-//            try
-//            {
-//                this._client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(DatabaseName, CollectionName),
-//                    person).Wait();
-//            }
-//            catch (Exception e)
-//            {
-//                Debug.WriteLine("Cant insert new person: " + e.Message);
-//            }
-//        }
-
-//        internal async void Put(string id, Person newPerson)
-//        {
-//            this._client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(DatabaseName, CollectionName, id), newPerson).Wait();
-//        }
-
-//        public void Save()
-//        {
-
-//        }
-
-//        public async void Delete(string id)
-//        {
-//            this._client.DeleteDocumentAsync(UriFactory.CreateDocumentUri(DatabaseName, CollectionName, id)).Wait();
-//        }
-//    }
-//}
