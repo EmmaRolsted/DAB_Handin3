@@ -27,8 +27,14 @@ namespace F18DABH3Gr27.Controllers
         //{
         //    return View();
         ////}
+        //GET: one person from datafrom using the person.Id
+        [ResponseType(typeof(Person))]
+        public async Task<Person> GetPerson(string id)
+        {
+            return await Repository.Repository<Person>.GetPersonAsync(id);
 
-  
+        }
+
         //GET: all people from database
         public async Task<IEnumerable<Person>> GetPeople()
         {
@@ -36,13 +42,7 @@ namespace F18DABH3Gr27.Controllers
             return person;
         }
 
-        //GET: one person from datafrom using the person.Id
-        [ResponseType(typeof(Person))]
-        public async Task<Person> GetPerson(string id)
-        {
-            return await Repository.Repository<Person>.GetPersonAsync(id);
-      
-        }
+
 
         // PUT: api/People/5 UPDATE
         [ResponseType(typeof(void))]
