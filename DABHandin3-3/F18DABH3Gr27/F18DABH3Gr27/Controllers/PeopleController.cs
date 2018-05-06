@@ -21,6 +21,14 @@ namespace F18DABH3Gr27.Controllers
     {
         //private F18DABH3Gr27Context db = new F18DABH3Gr27Context();
 
+
+        //// GET: People
+        //public ActionResult Index()
+        //{
+        //    return View();
+        ////}
+
+  
         //GET: all people from database
         public async Task<IEnumerable<Person>> GetPeople()
         {
@@ -58,121 +66,159 @@ namespace F18DABH3Gr27.Controllers
         }
     }
 }
+//    public async Task<IEnumerable<Person>> GetPeople()
+//    {
+//        var person = await DocumentDBRepository<Person>.GetItemsAsync(d => d.CreatedPeron);
+//        return person;
+//    }
 
-//POST
+//    [ActionName("Index")]
+//    public async Task<ActionResult> IndexAsync()
+//    {
+//        var person = await DocumentDBRepository<Person>.GetItemsAsync(d => !d.CreatedPeron);
+//        return View(person);
+//    }
 
-        //DELETE
+//    [HttpPost]
+//    [ActionName("Edit")]
+//    [ValidateAntiForgeryToken]
+//    public async Task<ActionResult> EditAsync([Bind(Include = "Id,Name,Description,Completed")] Person person)
+//    {
+//        if (ModelState.IsValid)
+//        {
+//            await DocumentDBRepository<Person>.UpdateItemAsync(person.Id, person);
+//                //.UpdateItemAsync(item.Id, item);
+//            return RedirectToAction("Index");
+//        }
 
-        //// GET: api/People
-        ////public IQueryable<Person> GetPeople()
-        ////{
-        ////    return db.People;
-        ////}
+//        return View(person);
+//    }
 
-        //// GET: api/People/5
-        //[ResponseType(typeof(Person))]
-        //public async Task<IHttpActionResult> GetPerson(string id)
-        //{
-        //    Person person = await db.People.FindAsync(id);
-        //    if (person == null)
-        //    {
-        //        return NotFound();
-        //    }
+//    [ActionName("Edit")]
+//    public async Task<ActionResult> EditAsync(string id)
+//    {
+//        if (id == null)
+//        {
+//            return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+//        }
 
-        //    return Ok(person);
-        //}
+//        Person person = await DocumentDBRepository<Person>.GetItemAsync(id);
+//        if (person == null)
+//        {
+//            return HttpNotFound();
+//        }
 
-        //// PUT: api/People/5
-        //[ResponseType(typeof(void))]
-        //public async Task<IHttpActionResult> PutPerson(string id, Person person)
-        //{
-        //    if (!ModelState.IsValid)
-        //    {
-        //        return BadRequest(ModelState);
-        //    }
+//        return View(person);
+//    }
+//}
 
-        //    if (id != person.Id)
-        //    {
-        //        return BadRequest();
-        //    }
 
-        //    db.Entry(person).State = EntityState.Modified;
 
-        //    try
-        //    {
-        //        await db.SaveChangesAsync();
-        //    }
-        //    catch (DbUpdateConcurrencyException)
-        //    {
-        //        if (!PersonExists(id))
-        //        {
-        //            return NotFound();
-        //        }
-        //        else
-        //        {
-        //            throw;
-        //        }
-        //    }
 
-        //    return StatusCode(HttpStatusCode.NoContent);
-        //}
+//// GET: api/People/5
+//[ResponseType(typeof(Person))]
+//public async Task<IHttpActionResult> GetPerson(string id)
+//{
+//    Person person = await db.People.FindAsync(id);
+//    if (person == null)
+//    {
+//        return NotFound();
+//    }
 
-        //// POST: api/People
-        //[ResponseType(typeof(Person))]
-        //public async Task<IHttpActionResult> PostPerson(Person person)
-        //{
-        //    if (!ModelState.IsValid)
-        //    {
-        //        return BadRequest(ModelState);
-        //    }
+//    return Ok(person);
+//}
 
-        //    db.People.Add(person);
+//// PUT: api/People/5
+//[ResponseType(typeof(void))]
+//public async Task<IHttpActionResult> PutPerson(string id, Person person)
+//{
+//    if (!ModelState.IsValid)
+//    {
+//        return BadRequest(ModelState);
+//    }
 
-        //    try
-        //    {
-        //        await db.SaveChangesAsync();
-        //    }
-        //    catch (DbUpdateException)
-        //    {
-        //        if (PersonExists(person.Id))
-        //        {
-        //            return Conflict();
-        //        }
-        //        else
-        //        {
-        //            throw;
-        //        }
-        //    }
+//    if (id != person.Id)
+//    {
+//        return BadRequest();
+//    }
 
-        //    return CreatedAtRoute("DefaultApi", new { id = person.Id }, person);
-        //}
+//    db.Entry(person).State = EntityState.Modified;
 
-        //// DELETE: api/People/5
-        //[ResponseType(typeof(Person))]
-        //public async Task<IHttpActionResult> DeletePerson(string id)
-        //{
-        //    Person person = await db.People.FindAsync(id);
-        //    if (person == null)
-        //    {
-        //        return NotFound();
-        //    }
+//    try
+//    {
+//        await db.SaveChangesAsync();
+//    }
+//    catch (DbUpdateConcurrencyException)
+//    {
+//        if (!PersonExists(id))
+//        {
+//            return NotFound();
+//        }
+//        else
+//        {
+//            throw;
+//        }
+//    }
 
-        //    db.People.Remove(person);
-        //    await db.SaveChangesAsync();
+//    return StatusCode(HttpStatusCode.NoContent);
+//}
 
-        //    return Ok(person);
-        //}
+//// POST: api/People
+//[ResponseType(typeof(Person))]
+//public async Task<IHttpActionResult> PostPerson(Person person)
+//{
+//    if (!ModelState.IsValid)
+//    {
+//        return BadRequest(ModelState);
+//    }
 
-        //protected override void Dispose(bool disposing)
-        //{
-        //    if (disposing)
-        //    {
-        //        db.Dispose();
-        //    }
-        //    base.Dispose(disposing);
-        //}
+//    db.People.Add(person);
 
-        //private bool PersonExists(string id)
-        //{
-        //    return db.People.Count(e => e.Id == id) > 0;
-        //}
+//    try
+//    {
+//        await db.SaveChangesAsync();
+//    }
+//    catch (DbUpdateException)
+//    {
+//        if (PersonExists(person.Id))
+//        {
+//            return Conflict();
+//        }
+//        else
+//        {
+//            throw;
+//        }
+//    }
+
+//    return CreatedAtRoute("DefaultApi", new { id = person.Id }, person);
+//}
+
+//// DELETE: api/People/5
+//[ResponseType(typeof(Person))]
+//public async Task<IHttpActionResult> DeletePerson(string id)
+//{
+//    Person person = await db.People.FindAsync(id);
+//    if (person == null)
+//    {
+//        return NotFound();
+//    }
+
+//    db.People.Remove(person);
+//    await db.SaveChangesAsync();
+
+//    return Ok(person);
+//}
+
+//protected override void Dispose(bool disposing)
+//{
+//    if (disposing)
+//    {
+//        db.Dispose();
+//    }
+//    base.Dispose(disposing);
+//}
+
+//private bool PersonExists(string id)
+//{
+//    return db.People.Count(e => e.Id == id) > 0;
+//}
